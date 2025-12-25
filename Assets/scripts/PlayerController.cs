@@ -5,9 +5,9 @@ public class PlayerMovement : MonoBehaviour
     public float moveSpeed = 5f;
     private Rigidbody2D rb;
     
-    // We use an Enum to track the 4 possible directions
-    private enum Direction { None, Up, Down, Left, Right }
-    private Direction lastDirection = Direction.None;
+    // We track the last pressed direction for each axis separately
+    private float lastXDir = 0;
+    private float lastYDir = 0;
 
     void Start()
     {
@@ -16,64 +16,52 @@ public class PlayerMovement : MonoBehaviour
 
     void Update()
     {
-        // 1. Get Raw Input
-        float inputX = Input.GetAxisRaw("Horizontal");
-        float inputY = Input.GetAxisRaw("Vertical");
+        // 1. Detect NEW key presses for Horizontal
+        if (Input.GetKeyDown(KeyCode.A) || Input.GetKeyDown(KeyCode.LeftArrow)) lastXDir = -1;
+        else if (Input.GetKeyDown(KeyCode.D) || Input.GetKeyDown(KeyCode.RightArrow)) lastXDir = 1;
 
-        // 2. Update the 'Last Direction' based on the newest button press
-        // Keyboard Support
-        if (Input.GetKeyDown(KeyCode.W)) lastDirection = Direction.Up;
-        if (Input.GetKeyDown(KeyCode.S)) lastDirection = Direction.Down;
-        if (Input.GetKeyDown(KeyCode.A)) lastDirection = Direction.Left;
-        if (Input.GetKeyDown(KeyCode.D)) lastDirection = Direction.Right;
+        // 2. Detect NEW key presses for Vertical
+        if (Input.GetKeyDown(KeyCode.W) || Input.GetKeyDown(KeyCode.UpArrow)) lastYDir = 1;
+        else if (Input.GetKeyDown(KeyCode.S) || Input.GetKeyDown(KeyCode.DownArrow)) lastYDir = -1;
 
-        // 3. Controller 'Closest Input' logic (Snap to strongest axis)
-        // If the stick is moved significantly, we treat it as a new direction press
-        if (Mathf.Abs(inputX) > 0.8f && Mathf.Abs(inputX) > Mathf.Abs(inputY))
-            lastDirection = inputX > 0 ? Direction.Right : Direction.Left;
-        else if (Mathf.Abs(inputY) > 0.8f && Mathf.Abs(inputY) > Mathf.Abs(inputX))
-            lastDirection = inputY > 0 ? Direction.Up : Direction.Down;
+        // 3. Controller / Joystick Logic
+        // If the stick is pushed far enough, it overrides the 'lastDir'
+        float stickX = Input.GetAxisRaw("Horizontal");
+        float stickY = Input.GetAxisRaw("Vertical");
 
-        // 4. Verification: If the 'Last Direction' key is no longer held, 
-        // fallback to whatever else is currently being pressed.
-        Vector2 moveVec = GetDirectionVector(lastDirection);
-        
-        // If the last pressed key isn't actually being held anymore, find a new one
-        if (!IsDirectionHeld(lastDirection, inputX, inputY))
+        if (Mathf.Abs(stickX) > 0.1f) lastXDir = stickX > 0 ? 1 : -1;
+        if (Mathf.Abs(stickY) > 0.1f) lastYDir = stickY > 0 ? 1 : -1;
+
+        // 4. Verification: If a key is released, and the OTHER key on that axis is still held, 
+        // switch back to it. If nothing is held, set that axis to 0.
+        float finalX = GetActiveAxisInput(lastXDir, "Horizontal", KeyCode.D, KeyCode.A);
+        float finalY = GetActiveAxisInput(lastYDir, "Vertical", KeyCode.W, KeyCode.S);
+
+        // 5. Combine for Diagonal Movement
+        Vector2 moveDirection = new Vector2(finalX, finalY);
+
+        // Normalize prevents "Diagonal Speed Boost" (going faster when moving diagonally)
+        if (moveDirection.magnitude > 1)
         {
-            if (inputY > 0) lastDirection = Direction.Up;
-            else if (inputY < 0) lastDirection = Direction.Down;
-            else if (inputX > 0) lastDirection = Direction.Right;
-            else if (inputX < 0) lastDirection = Direction.Left;
-            else lastDirection = Direction.None;
+            moveDirection.Normalize();
         }
 
-        rb.linearVelocity = GetDirectionVector(lastDirection) * moveSpeed;
+        rb.linearVelocity = moveDirection * moveSpeed;
     }
 
-    // Helper: Converts our Direction choice into a Vector2
-    Vector2 GetDirectionVector(Direction dir)
+    // Helper: Checks if the 'last' pressed direction is still valid, or falls back to the opposite
+    float GetActiveAxisInput(float lastDir, string axisName, KeyCode positiveKey, KeyCode negativeKey)
     {
-        switch (dir)
-        {
-            case Direction.Up: return Vector2.up;
-            case Direction.Down: return Vector2.down;
-            case Direction.Left: return Vector2.left;
-            case Direction.Right: return Vector2.right;
-            default: return Vector2.zero;
-        }
-    }
+        float raw = Input.GetAxisRaw(axisName);
 
-    // Helper: Checks if the specific direction is still being "pushed"
-    bool IsDirectionHeld(Direction dir, float x, float y)
-    {
-        switch (dir)
+        // If we are holding the 'last' direction, keep it
+        if ((lastDir > 0 && Input.GetKey(positiveKey)) || (lastDir < 0 && Input.GetKey(negativeKey)))
         {
-            case Direction.Up: return Input.GetKey(KeyCode.W) || y > 0.1f;
-            case Direction.Down: return Input.GetKey(KeyCode.S) || y < -0.1f;
-            case Direction.Left: return Input.GetKey(KeyCode.A) || x < -0.1f;
-            case Direction.Right: return Input.GetKey(KeyCode.D) || x > 0.1f;
-            default: return false;
+            return lastDir;
         }
+        // If we released the last direction but are holding the opposite one
+        if (raw != 0) return raw;
+
+        return 0;
     }
 }
