@@ -606,19 +606,19 @@ MonoBehaviour:
   m_LastFolders:
   - Assets
   m_LastFoldersGridSize: -1
-  m_LastProjectPath: C:\Users\PC\Desktop\games\Dank Castle
+  m_LastProjectPath: C:\Users\PC\Desktop\games\Dank Castle\Dank Castle
   m_LockTracker:
     m_IsLocked: 0
   m_LastLocalAssetsSearchArea: 1
   m_FolderTreeState:
     scrollPos: {x: 0, y: 0}
     m_SelectedIDs:
-    - m_Data: 65792
+    - m_Data: 48634
     m_LastClickedID:
-      m_Data: 65792
+      m_Data: 48634
     m_ExpandedIDs:
     - m_Data: 0
-    - m_Data: 65792
+    - m_Data: 48634
     - m_Data: 1000000000
     - m_Data: 2147483647
     m_RenameOverlay:
@@ -651,7 +651,9 @@ MonoBehaviour:
     m_SelectedIDs: []
     m_LastClickedID:
       m_Data: 0
-    m_ExpandedIDs: []
+    m_ExpandedIDs:
+    - m_Data: 0
+    - m_Data: 48634
     m_RenameOverlay:
       m_UserAcceptedRename: 0
       m_Name: 
@@ -678,9 +680,10 @@ MonoBehaviour:
       m_Icon: {fileID: 0}
       m_ResourceFile: 
   m_ListAreaState:
-    m_SelectedInstanceIDs: []
-    m_LastClickedInstanceID: 0
-    m_HadKeyboardFocusLastEvent: 1
+    m_SelectedInstanceIDs:
+    - m_Data: 48572
+    m_LastClickedInstanceID: 48572
+    m_HadKeyboardFocusLastEvent: 0
     m_ExpandedInstanceIDs: []
     m_RenameOverlay:
       m_UserAcceptedRename: 0
@@ -803,11 +806,12 @@ MonoBehaviour:
   m_SceneHierarchy:
     m_TreeViewState:
       scrollPos: {x: 0, y: 0}
-      m_SelectedIDs: []
+      m_SelectedIDs:
+      - m_Data: 48572
       m_LastClickedID:
-        m_Data: 0
+        m_Data: 48572
       m_ExpandedIDs:
-      - m_Data: -59072
+      - m_Data: -1312
       m_RenameOverlay:
         m_UserAcceptedRename: 0
         m_Name: 
@@ -1330,9 +1334,9 @@ MonoBehaviour:
   m_AudioPlay: 0
   m_DebugDrawModesUseInteractiveLightBakingData: 0
   m_Position:
-    m_Target: {x: 4.097203, y: 0.38632, z: 0.012901574}
+    m_Target: {x: 1.4122199, y: 0.39175653, z: 0.042846035}
     speed: 2
-    m_Value: {x: 4.097203, y: 0.38632, z: 0.012901574}
+    m_Value: {x: 1.4122199, y: 0.39175653, z: 0.042846035}
   m_RenderMode: 0
   m_CameraMode:
     drawMode: 0
@@ -1382,9 +1386,9 @@ MonoBehaviour:
     speed: 2
     m_Value: {x: 0, y: 0, z: 0, w: 1}
   m_Size:
-    m_Target: 8.709839
+    m_Target: 5.7153983
     speed: 2
-    m_Value: 8.709839
+    m_Value: 5.7153983
   m_Ortho:
     m_Target: 1
     speed: 2
