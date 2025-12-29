@@ -1,67 +1,88 @@
 using UnityEngine;
+using System.Collections;
 
-public class PlayerMovement : MonoBehaviour
+public class SolidSimpleDash : MonoBehaviour
 {
-    public float moveSpeed = 5f;
+    [Header("Movement")]
+    public float moveSpeed = 8f;
     private Rigidbody2D rb;
-    
-    // We track the last pressed direction for each axis separately
-    private float lastXDir = 0;
-    private float lastYDir = 0;
+    private BoxCollider2D boxCol;
+
+    [Header("Dash Settings")]
+    public float dashDistance = 5f;
+    public float dashDuration = 0.15f;
+    public float cooldown = 0.5f;
+    public LayerMask wallLayer; // MUST BE SET IN INSPECTOR
+    public AnimationCurve easeCurve = AnimationCurve.EaseInOut(0, 0, 1, 1);
+
+    private bool isDashing = false;
+    private float nextDashTime;
+    private Vector2 lastMoveDir = Vector2.right;
 
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
+        boxCol = GetComponent<BoxCollider2D>();
+        
+        // Settings for smooth collision
+        rb.interpolation = RigidbodyInterpolation2D.Interpolate;
+        rb.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
     }
 
     void Update()
     {
-        // 1. Detect NEW key presses for Horizontal
-        if (Input.GetKeyDown(KeyCode.A) || Input.GetKeyDown(KeyCode.LeftArrow)) lastXDir = -1;
-        else if (Input.GetKeyDown(KeyCode.D) || Input.GetKeyDown(KeyCode.RightArrow)) lastXDir = 1;
+        if (isDashing) return;
 
-        // 2. Detect NEW key presses for Vertical
-        if (Input.GetKeyDown(KeyCode.W) || Input.GetKeyDown(KeyCode.UpArrow)) lastYDir = 1;
-        else if (Input.GetKeyDown(KeyCode.S) || Input.GetKeyDown(KeyCode.DownArrow)) lastYDir = -1;
+        float x = Input.GetAxisRaw("Horizontal");
+        float y = Input.GetAxisRaw("Vertical");
+        Vector2 input = new Vector2(x, y).normalized;
+        
+        if (input != Vector2.zero) lastMoveDir = input;
 
-        // 3. Controller / Joystick Logic
-        // If the stick is pushed far enough, it overrides the 'lastDir'
-        float stickX = Input.GetAxisRaw("Horizontal");
-        float stickY = Input.GetAxisRaw("Vertical");
-
-        if (Mathf.Abs(stickX) > 0.1f) lastXDir = stickX > 0 ? 1 : -1;
-        if (Mathf.Abs(stickY) > 0.1f) lastYDir = stickY > 0 ? 1 : -1;
-
-        // 4. Verification: If a key is released, and the OTHER key on that axis is still held, 
-        // switch back to it. If nothing is held, set that axis to 0.
-        float finalX = GetActiveAxisInput(lastXDir, "Horizontal", KeyCode.D, KeyCode.A);
-        float finalY = GetActiveAxisInput(lastYDir, "Vertical", KeyCode.W, KeyCode.S);
-
-        // 5. Combine for Diagonal Movement
-        Vector2 moveDirection = new Vector2(finalX, finalY);
-
-        // Normalize prevents "Diagonal Speed Boost" (going faster when moving diagonally)
-        if (moveDirection.magnitude > 1)
+        if ((Input.GetKeyDown(KeyCode.LeftShift) || Input.GetKeyDown(KeyCode.JoystickButton0)) && Time.time > nextDashTime)
         {
-            moveDirection.Normalize();
+            StartCoroutine(PerformDash(input == Vector2.zero ? lastMoveDir : input));
         }
 
-        rb.linearVelocity = moveDirection * moveSpeed;
+        rb.linearVelocity = input * moveSpeed;
     }
 
-    // Helper: Checks if the 'last' pressed direction is still valid, or falls back to the opposite
-    float GetActiveAxisInput(float lastDir, string axisName, KeyCode positiveKey, KeyCode negativeKey)
+    IEnumerator PerformDash(Vector2 dir)
     {
-        float raw = Input.GetAxisRaw(axisName);
+        isDashing = true;
+        nextDashTime = Time.time + cooldown;
+        
+        Vector2 startPos = rb.position;
 
-        // If we are holding the 'last' direction, keep it
-        if ((lastDir > 0 && Input.GetKey(positiveKey)) || (lastDir < 0 && Input.GetKey(negativeKey)))
+        // 1. BOXCAST: Checks the player's full body size along the dash path
+        // We use the size of your actual BoxCollider2D
+        RaycastHit2D hit = Physics2D.BoxCast(startPos, boxCol.size, 0f, dir, dashDistance, wallLayer);
+        
+        Vector2 targetPos;
+        if (hit.collider != null)
         {
-            return lastDir;
+            // If we hit a wall, stop exactly at the hit point minus a tiny buffer
+            targetPos = hit.centroid; 
         }
-        // If we released the last direction but are holding the opposite one
-        if (raw != 0) return raw;
+        else
+        {
+            targetPos = startPos + (dir * dashDistance);
+        }
 
-        return 0;
+        float elapsed = 0;
+        while (elapsed < dashDuration)
+        {
+            elapsed += Time.deltaTime;
+            float percent = elapsed / dashDuration;
+            float curvePercent = easeCurve.Evaluate(percent);
+            
+            // 2. MovePosition: Respects physics and prevents phasing
+            rb.MovePosition(Vector2.Lerp(startPos, targetPos, curvePercent));
+            
+            yield return null;
+        }
+
+        rb.MovePosition(targetPos);
+        isDashing = false;
     }
 }
